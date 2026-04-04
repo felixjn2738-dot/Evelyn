@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="pink">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Happy Birthday, Evelyn!</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- Theme Switcher -->
+  <div class="theme-switcher" role="group" aria-label="Choose theme">
+    <button class="theme-btn pink active" data-theme="pink" title="Pink & Gold"></button>
+    <button class="theme-btn blue" data-theme="blue" title="Blue & White"></button>
+    <button class="theme-btn dark" data-theme="dark" title="Black & Gray"></button>
+  </div>
+
+  <!-- Particle canvas -->
+  <canvas id="particles-canvas" aria-hidden="true"></canvas>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-content">
+      <p class="hero-label">✨ A special day for a special person ✨</p>
+      <h1 class="hero-name">Evelyn<br>Gracia Weslie</h1>
+      <div class="hero-divider"></div>
+      <p class="hero-tagline">From everyone who loves you</p>
+    </div>
+    <button class="scroll-indicator" aria-label="Scroll to letters">
+      <i class="fas fa-chevron-down"></i>
+    </button>
+  </section>
+
+  <!-- Letters -->
+  <section class="letters-section" id="letters">
+    <div class="container">
+      <h2 class="section-title">Letters from Your Loved Ones</h2>
+      <p class="section-subtitle">Each word written with love, just for you</p>
+
+      <div id="cards-grid" class="cards-grid">
+        <div class="state-placeholder">
+          <i class="fas fa-heart"></i>
+          <p>Loading letters&hellip;</p>
+        </div>
+      </div>
+
+      <div id="no-entries" class="state-placeholder hidden">
+        <i class="fas fa-envelope-open-heart"></i>
+        <p>Letters are being prepared with love&hellip;</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <p>Made with <i class="fas fa-heart" aria-label="love"></i> for Evelyn's special day</p>
+  </footer>
+
+  <!-- Letter Modal -->
+  <div id="modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="modal-name">
+    <div class="modal-overlay"></div>
+    <div class="modal-content">
+      <button class="modal-close" aria-label="Close"><i class="fas fa-times"></i></button>
+      <button class="modal-swap" aria-label="Swap layout" title="Swap photo &amp; letter position">
+        <i class="fas fa-right-left"></i>
+      </button>
+      <div class="modal-body">
+        <div class="modal-photo-side">
+          <div id="modal-photo" class="modal-gallery hidden"></div>
+          <div id="modal-photo-placeholder" class="modal-photo-placeholder">
+            <i class="fas fa-user" aria-hidden="true"></i>
+          </div>
+        </div>
+        <div class="modal-text-side">
+          <h3 id="modal-name" class="modal-name"></h3>
+          <div id="modal-letter" class="modal-letter"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lightbox -->
+  <div id="lightbox" class="lightbox hidden" role="dialog" aria-modal="true">
+    <div class="lightbox-overlay"></div>
+    <button class="lightbox-close" aria-label="Close"><i class="fas fa-times"></i></button>
+    <button class="lightbox-prev" aria-label="Previous photo"><i class="fas fa-chevron-left"></i></button>
+    <button class="lightbox-next" aria-label="Next photo"><i class="fas fa-chevron-right"></i></button>
+    <div class="lightbox-img-wrap">
+      <img id="lightbox-img" src="" alt="">
+    </div>
+    <p class="lightbox-counter"></p>
+  </div>
+
+  <script src="js/main.js"></script>
+</body>
+</html>
