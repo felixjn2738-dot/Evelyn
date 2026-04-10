@@ -273,6 +273,32 @@ body {
   color: var(--accent-lt);
 }
 
+/* ─── No-photo card variant ─── */
+.card--no-photo .card-photo-wrap {
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-lt) 100%);
+  padding-top: 52%;
+}
+.card--no-photo .card-photo-wrap::before {
+  content: '\201C';
+  position: absolute;
+  bottom: -1.2rem;
+  left: 0.6rem;
+  font-family: 'Playfair Display', serif;
+  font-size: 9rem;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.15);
+  pointer-events: none;
+  z-index: 0;
+}
+.card--no-photo .card-photo-placeholder {
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 2.4rem;
+  z-index: 1;
+}
+.card--no-photo .card-name {
+  margin-top: 0.15rem;
+}
+
 .card-body { padding: 1.1rem 1.2rem 1.3rem; }
 
 .card-name {
@@ -424,8 +450,14 @@ body {
   grid-template-columns: 1fr;
   gap: 2px;
 }
-.modal-gallery:has(.gallery-img:nth-child(2)) {
+.modal-gallery:has(.gallery-img-wrap:nth-child(2)) {
   grid-template-columns: 1fr 1fr;
+}
+.gallery-img-wrap {
+  position: relative;
+  min-height: 160px;
+  overflow: hidden;
+  background: var(--bg2);
 }
 .gallery-img {
   width: 100%;
@@ -440,12 +472,25 @@ body {
   width: 100%;
   height: 100%;
   min-height: 320px;
-  background: var(--bg2);
+  background: linear-gradient(160deg, var(--accent) 0%, var(--accent-lt) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 5rem;
-  color: var(--accent-lt);
+  font-size: 4.5rem;
+  color: rgba(255, 255, 255, 0.88);
+  position: relative;
+  overflow: hidden;
+}
+.modal-photo-placeholder::before {
+  content: '\201C';
+  position: absolute;
+  bottom: -2rem;
+  left: 0.5rem;
+  font-family: 'Playfair Display', serif;
+  font-size: 15rem;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.12);
+  pointer-events: none;
 }
 
 .modal-text-side {
@@ -595,6 +640,26 @@ body {
 ═══════════════════════════════════════════════════════ */
 .hidden { display: none !important; }
 
+/* ─── Image loading shimmer ─── */
+.img-loading {
+  position: relative;
+}
+.img-loading::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.18) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease infinite;
+}
+
 /* ═══════════════════════════════════════════════════════
    ANIMATIONS
 ═══════════════════════════════════════════════════════ */
@@ -616,6 +681,11 @@ body {
 @keyframes popIn {
   from { opacity: 0; transform: scale(0.94) translateY(12px); }
   to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes shimmer {
+  from { background-position: -200% 0; }
+  to   { background-position:  200% 0; }
 }
 
 /* ═══════════════════════════════════════════════════════

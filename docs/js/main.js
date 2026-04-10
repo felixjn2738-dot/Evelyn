@@ -181,9 +181,12 @@ function buildCard(entry, idx) {
   if (firstPhoto) {
     const img = document.createElement('img');
     img.className = 'card-photo';
-    img.src = firstPhoto.url;
     img.alt = entry.name;
     img.loading = 'lazy';
+    photoWrap.classList.add('img-loading');
+    img.addEventListener('load',  () => photoWrap.classList.remove('img-loading'));
+    img.addEventListener('error', () => photoWrap.classList.remove('img-loading'));
+    img.src = firstPhoto.url;
     photoWrap.appendChild(img);
     // Badge if multiple photos
     if (entry.photos.length > 1) {
@@ -193,9 +196,10 @@ function buildCard(entry, idx) {
       photoWrap.appendChild(badge);
     }
   } else {
+    card.classList.add('card--no-photo');
     const ph = document.createElement('div');
     ph.className = 'card-photo-placeholder';
-    ph.innerHTML = '<i class="fas fa-user-circle" aria-hidden="true"></i>';
+    ph.innerHTML = '<i class="fas fa-envelope-open" aria-hidden="true"></i>';
     photoWrap.appendChild(ph);
   }
 
@@ -243,13 +247,20 @@ function openModal(entry) {
   if (photos.length) {
     modalPhoto.innerHTML = '';
     photos.forEach((p, i) => {
+      const wrap = document.createElement('div');
+      wrap.className = 'gallery-img-wrap img-loading';
+
       const img = document.createElement('img');
-      img.src = p.url;
       img.alt = entry.name;
       img.loading = 'lazy';
       img.className = 'gallery-img';
+      img.addEventListener('load',  () => wrap.classList.remove('img-loading'));
+      img.addEventListener('error', () => wrap.classList.remove('img-loading'));
       img.addEventListener('click', () => openLightbox(photos, i));
-      modalPhoto.appendChild(img);
+      img.src = p.url;
+
+      wrap.appendChild(img);
+      modalPhoto.appendChild(wrap);
     });
     modalPhoto.classList.remove('hidden');
     modalPh.classList.add('hidden');
