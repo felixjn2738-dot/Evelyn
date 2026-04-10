@@ -3,6 +3,30 @@ history.scrollRestoration = 'manual';
 window.scrollTo(0, 0);
 
 /* ─────────────────────────────────────────────────────
+   CIRCULAR FAVICON
+───────────────────────────────────────────────────── */
+(function () {
+  const img = new Image();
+  img.src = 'assets/img/WhatsApp Image 2026-04-11 at 00.39.56.jpeg';
+  img.onload = function () {
+    const size = 64;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    ctx.beginPath();
+    ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
+    ctx.closePath();
+    ctx.clip();
+    ctx.drawImage(img, 0, 0, size, size);
+    const link = document.querySelector("link[rel='icon']") || document.createElement('link');
+    link.rel = 'icon';
+    link.href = canvas.toDataURL('image/png');
+    document.head.appendChild(link);
+  };
+})();
+
+/* ─────────────────────────────────────────────────────
    THEME SWITCHER
 ───────────────────────────────────────────────────── */
 const savedTheme = localStorage.getItem('bday-theme') || 'pink';
@@ -27,107 +51,200 @@ function applyTheme(theme) {
 (function initParticles() {
   const canvas = document.getElementById('particles-canvas');
   const ctx = canvas.getContext('2d');
-  let W, H, particles = [];
-
-  const PALETTES = {
-    pink: ['#FF69B4', '#FFD700', '#FF1493', '#FFC0CB', '#FFB6C1'],
-    blue: ['#42A5F5', '#90CAF9', '#29B6F6', '#80DEEA', '#B3E5FC'],
-    dark: ['#F78C6C', '#FFCB6B', '#C3E88D', '#82AAFF', '#FF5370'],
-  };
-  const COUNT = 45;
+  let W, H, blossoms = [], snowflakes = [], leaves = [];
 
   function resize() {
     W = canvas.width  = window.innerWidth;
     H = canvas.height = window.innerHeight;
   }
 
-  function palette() {
-    const theme = document.documentElement.getAttribute('data-theme') || 'pink';
-    return PALETTES[theme] || PALETTES.pink;
-  }
+  /* ── Cherry blossom petals (pink theme only) ── */
+  const BLOSSOM_COUNT  = 60;
+  // Vivid sakura pinks — clearly visible against the light pink background
+  const BLOSSOM_COLORS = ['#E91E8C', '#F06292', '#EC407A', '#FF4081', '#AD1457', '#D81B60'];
 
-  function make() {
-    const pal = palette();
+  function makeBlossom() {
     return {
-      x: Math.random() * W,
-      y: Math.random() * H - H,
-      sz: Math.random() * 9 + 4,
-      color: pal[Math.floor(Math.random() * pal.length)],
-      vy: Math.random() * 0.9 + 0.4,
-      vx: (Math.random() - 0.5) * 0.45,
-      op: Math.random() * 0.55 + 0.25,
-      rot: Math.random() * 360,
-      drot: (Math.random() - 0.5) * 1.8,
-      heart: Math.random() > 0.45,
+      x:          Math.random() * W,
+      y:          Math.random() * H - H,
+      sz:         Math.random() * 14 + 9,        // 9–23 px per petal spoke
+      color:      BLOSSOM_COLORS[Math.floor(Math.random() * BLOSSOM_COLORS.length)],
+      vy:         Math.random() * 0.85 + 0.35,
+      vx:         (Math.random() - 0.5) * 0.55,
+      swing:      Math.random() * Math.PI * 2,
+      swingSpeed: Math.random() * 0.022 + 0.008,
+      swingAmp:   Math.random() * 2.0 + 1.0,
+      op:         Math.random() * 0.25 + 0.05,   // 0.25–0.30
+      rot:        Math.random() * 360,
+      drot:       (Math.random() - 0.5) * 1.4,
     };
   }
 
-  function drawHeart(x, y, s, color, op) {
-    const k = s / 14;
+  function drawBlossom(p) {
+    const s = p.sz;
     ctx.save();
-    ctx.globalAlpha = op;
-    ctx.fillStyle = color;
+    ctx.globalAlpha = p.op;
+    ctx.translate(p.x, p.y);
+    ctx.rotate((p.rot * Math.PI) / 180);
+    // Five petals radiating from center
+    for (let i = 0; i < 5; i++) {
+      ctx.save();
+      ctx.rotate((i / 5) * Math.PI * 2);
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.bezierCurveTo( s * 0.45, -s * 0.20,  s * 0.45, -s * 0.85, 0, -s);
+      ctx.bezierCurveTo(-s * 0.45, -s * 0.85, -s * 0.45, -s * 0.20, 0,  0);
+      ctx.fillStyle = p.color;
+      ctx.fill();
+      ctx.restore();
+    }
+    // White center dot
     ctx.beginPath();
-    ctx.moveTo(x, y + k * 4);
-    ctx.bezierCurveTo(x, y + k * 2, x - k * 6, y - k * 2, x - k * 6, y - k * 6);
-    ctx.bezierCurveTo(x - k * 6, y - k * 10, x, y - k * 10, x, y - k * 6);
-    ctx.bezierCurveTo(x, y - k * 10, x + k * 6, y - k * 10, x + k * 6, y - k * 6);
-    ctx.bezierCurveTo(x + k * 6, y - k * 2, x, y + k * 2, x, y + k * 4);
+    ctx.arc(0, 0, s * 0.22, 0, Math.PI * 2);
+    ctx.fillStyle = '#FFFFFF';
     ctx.fill();
     ctx.restore();
   }
 
-  function drawStar(x, y, s, color, op) {
+  /* ── Snowflakes (blue theme only) ── */
+  const SNOWFLAKE_COUNT  = 55;
+  const SNOWFLAKE_COLORS = ['#FFFFFF', '#E3F2FD', '#BBDEFB', '#90CAF9', '#E0F7FA'];
+
+  function makeSnowflake() {
+    return {
+      x:          Math.random() * W,
+      y:          Math.random() * H - H,
+      sz:         Math.random() * 11 + 6,
+      color:      SNOWFLAKE_COLORS[Math.floor(Math.random() * SNOWFLAKE_COLORS.length)],
+      vy:         Math.random() * 0.65 + 0.25,
+      vx:         (Math.random() - 0.5) * 0.4,
+      swing:      Math.random() * Math.PI * 2,
+      swingSpeed: Math.random() * 0.018 + 0.006,
+      swingAmp:   Math.random() * 1.5 + 0.8,
+      op:         Math.random() * 0.25 + 0.20,
+      rot:        Math.random() * 60,
+      drot:       (Math.random() - 0.5) * 0.35,
+    };
+  }
+
+  function drawSnowflake(p) {
+    const s = p.sz;
     ctx.save();
-    ctx.globalAlpha = op;
-    ctx.fillStyle = color;
-    ctx.beginPath();
-    for (let i = 0; i < 5; i++) {
-      const a = (i * 4 * Math.PI) / 5 - Math.PI / 2;
-      const r = s / 2;
-      i === 0
-        ? ctx.moveTo(x + r * Math.cos(a), y + r * Math.sin(a))
-        : ctx.lineTo(x + r * Math.cos(a), y + r * Math.sin(a));
+    ctx.globalAlpha = p.op;
+    ctx.translate(p.x, p.y);
+    ctx.rotate((p.rot * Math.PI) / 180);
+    ctx.strokeStyle = p.color;
+    ctx.lineWidth   = Math.max(1, s * 0.09);
+    ctx.lineCap     = 'round';
+    for (let i = 0; i < 6; i++) {
+      ctx.save();
+      ctx.rotate((i / 6) * Math.PI * 2);
+      ctx.beginPath();
+      ctx.moveTo(0, 0); ctx.lineTo(0, -s);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(0, -s * 0.35); ctx.lineTo( s * 0.22, -s * 0.55);
+      ctx.moveTo(0, -s * 0.35); ctx.lineTo(-s * 0.22, -s * 0.55);
+      ctx.moveTo(0, -s * 0.65); ctx.lineTo( s * 0.15, -s * 0.80);
+      ctx.moveTo(0, -s * 0.65); ctx.lineTo(-s * 0.15, -s * 0.80);
+      ctx.stroke();
+      ctx.restore();
     }
-    ctx.closePath();
+    ctx.restore();
+  }
+
+  /* ── Golden leaves (dark theme only) ── */
+  const LEAF_COUNT  = 50;
+  const LEAF_COLORS = ['#FFD700', '#FFA000', '#FF8F00', '#FFCA28', '#F9A825', '#FFAB40'];
+
+  function makeLeaf() {
+    return {
+      x:          Math.random() * W,
+      y:          Math.random() * H - H,
+      sz:         Math.random() * 13 + 8,
+      color:      LEAF_COLORS[Math.floor(Math.random() * LEAF_COLORS.length)],
+      vy:         Math.random() * 0.9 + 0.4,
+      vx:         (Math.random() - 0.5) * 0.6,
+      swing:      Math.random() * Math.PI * 2,
+      swingSpeed: Math.random() * 0.02 + 0.008,
+      swingAmp:   Math.random() * 1.8 + 0.8,
+      op:         Math.random() * 0.25 + 0.22,
+      rot:        Math.random() * 360,
+      drot:       (Math.random() - 0.5) * 1.5,
+    };
+  }
+
+  function drawLeaf(p) {
+    const s = p.sz;
+    ctx.save();
+    ctx.globalAlpha = p.op;
+    ctx.translate(p.x, p.y);
+    ctx.rotate((p.rot * Math.PI) / 180);
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.bezierCurveTo( s * 0.55, -s * 0.25,  s * 0.55, -s * 0.85, 0, -s);
+    ctx.bezierCurveTo(-s * 0.55, -s * 0.85, -s * 0.55, -s * 0.25, 0,  0);
+    ctx.fillStyle = p.color;
     ctx.fill();
+    // Center vein
+    ctx.strokeStyle = 'rgba(0,0,0,0.18)';
+    ctx.lineWidth   = Math.max(0.5, s * 0.055);
+    ctx.lineCap     = 'round';
+    ctx.beginPath();
+    ctx.moveTo(0, -s * 0.05); ctx.lineTo(0, -s * 0.88);
+    ctx.stroke();
     ctx.restore();
   }
 
   function tick() {
     ctx.clearRect(0, 0, W, H);
-    particles.forEach((p, i) => {
-      p.y   += p.vy;
-      p.x   += p.vx;
-      p.rot += p.drot;
-      ctx.save();
-      ctx.translate(p.x, p.y);
-      ctx.rotate((p.rot * Math.PI) / 180);
-      ctx.translate(-p.x, -p.y);
-      p.heart
-        ? drawHeart(p.x, p.y, p.sz, p.color, p.op)
-        : drawStar(p.x, p.y, p.sz, p.color, p.op);
-      ctx.restore();
-      if (p.y > H + 20) particles[i] = make();
+    // Theme-specific particles (behind hearts/stars)
+    blossoms.forEach((p, i) => {
+      p.swing += p.swingSpeed;
+      p.y     += p.vy;
+      p.x     += p.vx + Math.sin(p.swing) * p.swingAmp * 0.28;
+      p.rot   += p.drot;
+      drawBlossom(p);
+      if (p.y > H + 20) { const b = makeBlossom(); b.y = -20; blossoms[i] = b; }
+    });
+    snowflakes.forEach((p, i) => {
+      p.swing += p.swingSpeed;
+      p.y     += p.vy;
+      p.x     += p.vx + Math.sin(p.swing) * p.swingAmp * 0.22;
+      p.rot   += p.drot;
+      drawSnowflake(p);
+      if (p.y > H + 20) { const s = makeSnowflake(); s.y = -20; snowflakes[i] = s; }
+    });
+    leaves.forEach((p, i) => {
+      p.swing += p.swingSpeed;
+      p.y     += p.vy;
+      p.x     += p.vx + Math.sin(p.swing) * p.swingAmp * 0.30;
+      p.rot   += p.drot;
+      drawLeaf(p);
+      if (p.y > H + 20) { const l = makeLeaf(); l.y = -20; leaves[i] = l; }
     });
     requestAnimationFrame(tick);
   }
 
   resize();
   window.addEventListener('resize', resize);
-  for (let i = 0; i < COUNT; i++) {
-    const p = make();
-    p.y = Math.random() * H; // spread on first load
-    particles.push(p);
+  function seedTheme(theme) {
+    blossoms = []; snowflakes = []; leaves = [];
+    if (theme === 'pink') {
+      for (let i = 0; i < BLOSSOM_COUNT; i++)   { const p = makeBlossom();   p.y = Math.random() * H; blossoms.push(p); }
+    } else if (theme === 'blue') {
+      for (let i = 0; i < SNOWFLAKE_COUNT; i++) { const p = makeSnowflake(); p.y = Math.random() * H; snowflakes.push(p); }
+    } else if (theme === 'dark') {
+      for (let i = 0; i < LEAF_COUNT; i++)      { const p = makeLeaf();      p.y = Math.random() * H; leaves.push(p); }
+    }
   }
+
+  seedTheme(document.documentElement.getAttribute('data-theme') || 'pink');
   tick();
 
   window._particles = {
     recolor() {
-      const pal = palette();
-      particles.forEach((p) => {
-        p.color = pal[Math.floor(Math.random() * pal.length)];
-      });
+      seedTheme(document.documentElement.getAttribute('data-theme') || 'pink');
     },
   };
 })();
@@ -498,6 +615,20 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && !exitModal.classList.contains('hidden')) {
     hideExitModal();
   }
+});
+
+/* ─────────────────────────────────────────────────────
+   MAIN GALLERY
+───────────────────────────────────────────────────── */
+const galleryPhotos = [
+  { url: 'assets/img/WhatsApp Image 2026-04-11 at 00.45.58.jpeg' },
+  { url: 'assets/img/WhatsApp Image 2026-04-11 at 00.46.29.jpeg' },
+  { url: 'assets/img/WhatsApp Image 2026-04-11 at 00.48.24.jpeg' },
+];
+
+document.querySelectorAll('.hero-photo-img').forEach((img) => {
+  img.addEventListener('load', () => img.classList.add('loaded'));
+  img.addEventListener('click', () => openLightbox(galleryPhotos, Number(img.dataset.index)));
 });
 
 /* ─────────────────────────────────────────────────────
