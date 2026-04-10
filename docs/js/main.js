@@ -396,6 +396,54 @@ document.addEventListener('keydown', (e) => {
 });
 
 /* ─────────────────────────────────────────────────────
+   CONFIRM EXIT  (themed dialog on back-button)
+───────────────────────────────────────────────────── */
+const exitModal = document.getElementById('exit-modal');
+const exitStay  = document.getElementById('exit-stay');
+const exitLeave = document.getElementById('exit-leave');
+const exitOverlay = exitModal.querySelector('.exit-overlay');
+
+let exitConfirmed = false;
+
+// Push a sentinel state so the first back-button press triggers popstate
+// instead of navigating away.
+history.pushState({ exitGuard: true }, '');
+
+window.addEventListener('popstate', () => {
+  if (exitConfirmed) return;
+  // Re-arm the guard so we can intercept future back-button presses too.
+  history.pushState({ exitGuard: true }, '');
+  showExitModal();
+});
+
+function showExitModal() {
+  exitModal.classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+  exitStay.focus();
+}
+
+function hideExitModal() {
+  exitModal.classList.add('hidden');
+  document.body.style.overflow = '';
+}
+
+exitStay.addEventListener('click', hideExitModal);
+exitOverlay.addEventListener('click', hideExitModal);
+
+exitLeave.addEventListener('click', () => {
+  exitConfirmed = true;
+  hideExitModal();
+  // Pop the re-armed guard plus the original entry to actually leave.
+  history.go(-2);
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !exitModal.classList.contains('hidden')) {
+    hideExitModal();
+  }
+});
+
+/* ─────────────────────────────────────────────────────
    INIT
 ───────────────────────────────────────────────────── */
 loadEntries();
