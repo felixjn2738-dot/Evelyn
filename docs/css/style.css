@@ -146,8 +146,8 @@ body {
 }
 
 .hero-label {
-  font-size: 0.85rem;
-  letter-spacing: 0.18em;
+  font-size: 0.80rem;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--accent);
   margin-bottom: 1.2rem;
