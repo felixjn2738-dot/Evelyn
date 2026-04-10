@@ -289,6 +289,7 @@ document.querySelector('.modal-swap').addEventListener('click', () => {
 ───────────────────────────────────────────────────── */
 const lightbox        = document.getElementById('lightbox');
 const lightboxImg     = document.getElementById('lightbox-img');
+const lightboxImgWrap = document.querySelector('.lightbox-img-wrap');
 const lightboxCounter = document.querySelector('.lightbox-counter');
 const prevBtn         = document.querySelector('.lightbox-prev');
 const nextBtn         = document.querySelector('.lightbox-next');
@@ -299,12 +300,14 @@ let lbIndex  = 0;
 function openLightbox(photos, startIndex) {
   lbPhotos = photos;
   lbIndex  = startIndex;
+  lightboxImgWrap.style.cssText = '';
   showLbPhoto();
   lightbox.classList.remove('hidden');
 }
 
 function closeLightbox() {
   lightbox.classList.add('hidden');
+  lightboxImgWrap.style.cssText = '';
 }
 
 function showLbPhoto() {
@@ -320,6 +323,67 @@ prevBtn.addEventListener('click', () => { if (lbIndex > 0) { lbIndex--; showLbPh
 nextBtn.addEventListener('click', () => { if (lbIndex < lbPhotos.length - 1) { lbIndex++; showLbPhoto(); } });
 document.querySelector('.lightbox-close').addEventListener('click', closeLightbox);
 document.querySelector('.lightbox-overlay').addEventListener('click', closeLightbox);
+
+/* ─── Touch swipe ─── */
+let swipeStartX = 0;
+let swipeStartY = 0;
+let swipeLocked = false;
+
+lightbox.addEventListener('touchstart', (e) => {
+  swipeStartX = e.touches[0].clientX;
+  swipeStartY = e.touches[0].clientY;
+  swipeLocked = false;
+  lightboxImgWrap.style.transition = 'none';
+}, { passive: true });
+
+lightbox.addEventListener('touchmove', (e) => {
+  const dx = e.touches[0].clientX - swipeStartX;
+  const dy = e.touches[0].clientY - swipeStartY;
+  if (!swipeLocked) {
+    if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+    if (Math.abs(dy) >= Math.abs(dx)) return; // vertical — ignore
+    swipeLocked = true;
+  }
+  // resistance at first/last photo
+  const atEdge = (dx > 0 && lbIndex === 0) || (dx < 0 && lbIndex === lbPhotos.length - 1);
+  lightboxImgWrap.style.transform = `translateX(${atEdge ? dx * 0.2 : dx}px)`;
+}, { passive: true });
+
+function lbSlide(dir) {
+  // dir: 1 = next (swipe left), -1 = prev (swipe right)
+  const exit  = `translateX(${dir * -100}vw)`;
+  const enter = `translateX(${dir *  100}vw)`;
+  lightboxImgWrap.style.transition = 'transform 0.25s ease';
+  lightboxImgWrap.style.transform  = exit;
+  setTimeout(() => {
+    lbIndex += dir;
+    showLbPhoto();
+    lightboxImgWrap.style.transition = 'none';
+    lightboxImgWrap.style.transform  = enter;
+    lightboxImgWrap.getBoundingClientRect(); // force reflow
+    lightboxImgWrap.style.transition = 'transform 0.25s ease';
+    lightboxImgWrap.style.transform  = 'translateX(0)';
+  }, 260);
+}
+
+lightbox.addEventListener('touchend', (e) => {
+  if (!swipeLocked) return;
+  swipeLocked = false;
+  const dx = e.changedTouches[0].clientX - swipeStartX;
+  if (Math.abs(dx) > 60) {
+    if (dx < 0 && lbIndex < lbPhotos.length - 1) { lbSlide(1);  return; }
+    if (dx > 0 && lbIndex > 0)                   { lbSlide(-1); return; }
+  }
+  // snap back
+  lightboxImgWrap.style.transition = 'transform 0.25s ease';
+  lightboxImgWrap.style.transform  = 'translateX(0)';
+}, { passive: true });
+
+lightbox.addEventListener('touchcancel', () => {
+  swipeLocked = false;
+  lightboxImgWrap.style.transition = 'transform 0.25s ease';
+  lightboxImgWrap.style.transform  = 'translateX(0)';
+}, { passive: true });
 
 document.addEventListener('keydown', (e) => {
   if (!lightbox.classList.contains('hidden')) {
