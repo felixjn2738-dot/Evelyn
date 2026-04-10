@@ -100,11 +100,20 @@
   <!-- Lightbox -->
   <div id="lightbox" class="lightbox hidden" role="dialog" aria-modal="true">
     <div class="lightbox-overlay"></div>
+    <div class="lightbox-spinner hidden" aria-hidden="true"></div>
     <button class="lightbox-close" aria-label="Close"><i class="fas fa-times"></i></button>
     <button class="lightbox-prev" aria-label="Previous photo"><i class="fas fa-chevron-left"></i></button>
     <button class="lightbox-next" aria-label="Next photo"><i class="fas fa-chevron-right"></i></button>
-    <div class="lightbox-img-wrap">
-      <img id="lightbox-img" src="" alt="">
+    <div class="lightbox-track">
+      <div class="lightbox-img-wrap">
+        <img id="lightbox-img-prev" class="lb-side-img" src="" alt="">
+      </div>
+      <div class="lightbox-img-wrap">
+        <img id="lightbox-img" src="" alt="">
+      </div>
+      <div class="lightbox-img-wrap">
+        <img id="lightbox-img-next" class="lb-side-img" src="" alt="">
+      </div>
     </div>
     <p class="lightbox-counter"></p>
   </div>

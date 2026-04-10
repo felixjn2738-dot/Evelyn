@@ -252,9 +252,14 @@ function openModal(entry) {
 
       const img = document.createElement('img');
       img.alt = entry.name;
-      img.loading = 'lazy';
+      // Eager: the user is actively reading this letter, prioritise its photos.
+      img.loading = 'eager';
+      img.decoding = 'async';
       img.className = 'gallery-img';
-      img.addEventListener('load',  () => wrap.classList.remove('img-loading'));
+      img.addEventListener('load', () => {
+        wrap.classList.remove('img-loading');
+        img.classList.add('loaded');
+      });
       img.addEventListener('error', () => wrap.classList.remove('img-loading'));
       img.addEventListener('click', () => openLightbox(photos, i));
       img.src = p.url;
@@ -289,34 +294,86 @@ document.querySelector('.modal-swap').addEventListener('click', () => {
 ───────────────────────────────────────────────────── */
 const lightbox        = document.getElementById('lightbox');
 const lightboxImg     = document.getElementById('lightbox-img');
-const lightboxImgWrap = document.querySelector('.lightbox-img-wrap');
+const lightboxTrack   = document.querySelector('.lightbox-track');
 const lightboxCounter = document.querySelector('.lightbox-counter');
+const lightboxSpinner = document.querySelector('.lightbox-spinner');
 const prevBtn         = document.querySelector('.lightbox-prev');
 const nextBtn         = document.querySelector('.lightbox-next');
 
 let lbPhotos = [];
 let lbIndex  = 0;
+let lbLoadToken = 0;
 
 function openLightbox(photos, startIndex) {
   lbPhotos = photos;
   lbIndex  = startIndex;
-  lightboxImgWrap.style.cssText = '';
+  lightboxTrack.style.cssText = '';
   showLbPhoto();
   lightbox.classList.remove('hidden');
 }
 
 function closeLightbox() {
   lightbox.classList.add('hidden');
-  lightboxImgWrap.style.cssText = '';
+  lightboxTrack.style.cssText = '';
+  lbLoadToken++; // invalidate any in-flight load
 }
 
 function showLbPhoto() {
-  lightboxImg.src          = lbPhotos[lbIndex].url;
-  prevBtn.disabled         = lbIndex === 0;
-  nextBtn.disabled         = lbIndex === lbPhotos.length - 1;
+  const token = ++lbLoadToken;
+  const url = lbPhotos[lbIndex].url;
+
+  prevBtn.disabled = lbIndex === 0;
+  nextBtn.disabled = lbIndex === lbPhotos.length - 1;
   lightboxCounter.textContent = lbPhotos.length > 1
     ? `${lbIndex + 1} / ${lbPhotos.length}`
     : '';
+
+  // Populate the side slots so they're visually lined up and ready to swipe into.
+  const imgPrev = document.getElementById('lightbox-img-prev');
+  const imgNext = document.getElementById('lightbox-img-next');
+
+  imgPrev.classList.remove('loaded');
+  imgNext.classList.remove('loaded');
+
+  if (lbIndex > 0) {
+    imgPrev.src = lbPhotos[lbIndex - 1].url;
+    if (imgPrev.complete && imgPrev.naturalWidth > 0) imgPrev.classList.add('loaded');
+    else imgPrev.onload = () => imgPrev.classList.add('loaded');
+  } else {
+    imgPrev.src = '';
+  }
+
+  if (lbIndex < lbPhotos.length - 1) {
+    imgNext.src = lbPhotos[lbIndex + 1].url;
+    if (imgNext.complete && imgNext.naturalWidth > 0) imgNext.classList.add('loaded');
+    else imgNext.onload = () => imgNext.classList.add('loaded');
+  } else {
+    imgNext.src = '';
+  }
+
+  // Preload via a detached Image() so the visible <img> is only updated
+  // once the bytes are actually here — no half-painted frames.
+  const preloader = new Image();
+  preloader.src = url;
+
+  const reveal = () => {
+    if (token !== lbLoadToken) return; // user already navigated away
+    lightboxImg.src = url;
+    lightboxImg.classList.add('loaded');
+    lightboxSpinner.classList.add('hidden');
+  };
+
+  if (preloader.complete && preloader.naturalWidth > 0) {
+    reveal();
+  } else {
+    lightboxImg.classList.remove('loaded');
+    lightboxSpinner.classList.remove('hidden');
+    preloader.onload = reveal;
+    preloader.onerror = () => {
+      if (token !== lbLoadToken) return;
+      lightboxSpinner.classList.add('hidden');
+    };
+  }
 }
 
 prevBtn.addEventListener('click', () => { if (lbIndex > 0) { lbIndex--; showLbPhoto(); } });
@@ -333,7 +390,7 @@ lightbox.addEventListener('touchstart', (e) => {
   swipeStartX = e.touches[0].clientX;
   swipeStartY = e.touches[0].clientY;
   swipeLocked = false;
-  lightboxImgWrap.style.transition = 'none';
+  lightboxTrack.style.transition = 'none';
 }, { passive: true });
 
 lightbox.addEventListener('touchmove', (e) => {
@@ -346,23 +403,23 @@ lightbox.addEventListener('touchmove', (e) => {
   }
   // resistance at first/last photo
   const atEdge = (dx > 0 && lbIndex === 0) || (dx < 0 && lbIndex === lbPhotos.length - 1);
-  lightboxImgWrap.style.transform = `translateX(${atEdge ? dx * 0.2 : dx}px)`;
+  const offset = atEdge ? dx * 0.2 : dx;
+  // The track's resting position is -100vw (center slot); drag offsets from there.
+  lightboxTrack.style.transform = `translateX(calc(-100vw + ${offset}px))`;
 }, { passive: true });
 
 function lbSlide(dir) {
   // dir: 1 = next (swipe left), -1 = prev (swipe right)
-  const exit  = `translateX(${dir * -100}vw)`;
-  const enter = `translateX(${dir *  100}vw)`;
-  lightboxImgWrap.style.transition = 'transform 0.25s ease';
-  lightboxImgWrap.style.transform  = exit;
+  // Slide the track so the neighbour slot lands in the viewport center.
+  const targetX = dir === 1 ? '-200vw' : '0vw';
+  lightboxTrack.style.transition = 'transform 0.25s ease';
+  lightboxTrack.style.transform  = `translateX(${targetX})`;
   setTimeout(() => {
     lbIndex += dir;
-    showLbPhoto();
-    lightboxImgWrap.style.transition = 'none';
-    lightboxImgWrap.style.transform  = enter;
-    lightboxImgWrap.getBoundingClientRect(); // force reflow
-    lightboxImgWrap.style.transition = 'transform 0.25s ease';
-    lightboxImgWrap.style.transform  = 'translateX(0)';
+    showLbPhoto();                          // update center + side slots
+    lightboxTrack.style.transition = 'none';
+    lightboxTrack.style.transform  = 'translateX(-100vw)'; // snap back to center
+    lightboxTrack.getBoundingClientRect();  // force reflow
   }, 260);
 }
 
@@ -374,15 +431,15 @@ lightbox.addEventListener('touchend', (e) => {
     if (dx < 0 && lbIndex < lbPhotos.length - 1) { lbSlide(1);  return; }
     if (dx > 0 && lbIndex > 0)                   { lbSlide(-1); return; }
   }
-  // snap back
-  lightboxImgWrap.style.transition = 'transform 0.25s ease';
-  lightboxImgWrap.style.transform  = 'translateX(0)';
+  // snap back to center
+  lightboxTrack.style.transition = 'transform 0.25s ease';
+  lightboxTrack.style.transform  = 'translateX(-100vw)';
 }, { passive: true });
 
 lightbox.addEventListener('touchcancel', () => {
   swipeLocked = false;
-  lightboxImgWrap.style.transition = 'transform 0.25s ease';
-  lightboxImgWrap.style.transform  = 'translateX(0)';
+  lightboxTrack.style.transition = 'transform 0.25s ease';
+  lightboxTrack.style.transform  = 'translateX(-100vw)';
 }, { passive: true });
 
 document.addEventListener('keydown', (e) => {
