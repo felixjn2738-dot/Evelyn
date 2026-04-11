@@ -627,7 +627,12 @@ const galleryPhotos = [
 ];
 
 document.querySelectorAll('.hero-photo-img').forEach((img) => {
-  img.addEventListener('load', () => img.classList.add('loaded'));
+  if (img.complete && img.naturalWidth > 0) {
+    img.classList.add('loaded');
+  } else {
+    img.addEventListener('load',  () => img.classList.add('loaded'));
+    img.addEventListener('error', () => img.classList.add('loaded'));
+  }
   img.addEventListener('click', () => openLightbox(galleryPhotos, Number(img.dataset.index)));
 });
 
