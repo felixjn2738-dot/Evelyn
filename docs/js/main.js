@@ -393,11 +393,17 @@ function openModal(entry) {
 
   modal.classList.remove('hidden');
   document.body.style.overflow = 'hidden';
+  // Push a state so the phone back button closes this letter instead of leaving the page.
+  history.pushState({ letterModal: true }, '');
 }
 
 function closeModal() {
+  if (modal.classList.contains('hidden')) return;
   modal.classList.add('hidden');
   document.body.style.overflow = '';
+  // Pop the modal history state without triggering the exit-confirm dialog.
+  _suppressNextPopstate = true;
+  history.back();
 }
 
 document.querySelector('.modal-close').addEventListener('click', closeModal);
@@ -427,12 +433,16 @@ function openLightbox(photos, startIndex) {
   lightboxTrack.style.cssText = '';
   showLbPhoto();
   lightbox.classList.remove('hidden');
+  history.pushState({ lightbox: true }, '');
 }
 
 function closeLightbox() {
+  if (lightbox.classList.contains('hidden')) return;
   lightbox.classList.add('hidden');
   lightboxTrack.style.cssText = '';
   lbLoadToken++; // invalidate any in-flight load
+  _suppressNextPopstate = true;
+  history.back();
 }
 
 function showLbPhoto() {
@@ -572,20 +582,44 @@ document.addEventListener('keydown', (e) => {
 /* ─────────────────────────────────────────────────────
    CONFIRM EXIT  (themed dialog on back-button)
 ───────────────────────────────────────────────────── */
-const exitModal = document.getElementById('exit-modal');
-const exitStay  = document.getElementById('exit-stay');
-const exitLeave = document.getElementById('exit-leave');
+const exitModal   = document.getElementById('exit-modal');
+const exitStay    = document.getElementById('exit-stay');
+const exitLeave   = document.getElementById('exit-leave');
 const exitOverlay = exitModal.querySelector('.exit-overlay');
 
-let exitConfirmed = false;
+let exitConfirmed        = false;
+// Shared flag: set before calling history.back() programmatically so the
+// popstate handler knows not to treat it as a real back-button press.
+let _suppressNextPopstate = false;
 
 // Push a sentinel state so the first back-button press triggers popstate
 // instead of navigating away.
 history.pushState({ exitGuard: true }, '');
 
 window.addEventListener('popstate', () => {
+  if (_suppressNextPopstate) {
+    _suppressNextPopstate = false;
+    return;
+  }
+
+  // Lightbox open → close it; stay on the page.
+  if (!lightbox.classList.contains('hidden')) {
+    lightbox.classList.add('hidden');
+    lightboxTrack.style.cssText = '';
+    lbLoadToken++;
+    return;
+  }
+
+  // Letter modal open → close it; stay on the page.
+  if (!modal.classList.contains('hidden')) {
+    modal.classList.add('hidden');
+    document.body.style.overflow = '';
+    return;
+  }
+
+  // Nothing open → intercept as exit intent.
   if (exitConfirmed) return;
-  // Re-arm the guard so we can intercept future back-button presses too.
+  // Re-arm the guard so future back presses are also intercepted.
   history.pushState({ exitGuard: true }, '');
   showExitModal();
 });
@@ -607,8 +641,10 @@ exitOverlay.addEventListener('click', hideExitModal);
 exitLeave.addEventListener('click', () => {
   exitConfirmed = true;
   hideExitModal();
-  // Pop the re-armed guard plus the original entry to actually leave.
-  history.go(-2);
+  // Try to close the tab (works in in-app browsers like Instagram / WhatsApp).
+  window.close();
+  // Fallback: navigate back past both the re-armed guard and our initial push.
+  setTimeout(() => history.go(-2), 200);
 });
 
 document.addEventListener('keydown', (e) => {
